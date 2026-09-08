@@ -27,8 +27,8 @@ public class SorceryEngine {
     }
 
     /**
-     * Loads only the council rules.
-     * Used by the web interface when applications are uploaded by the user.
+     * Carga las reglas del consejo desde un archivo JSON.
+     * Usadas por la interfaz web cuando las aplicaciones son subidas por el usuario.
      */
     public void loadRules(Path dataDir) throws IOException {
         Gson gson = new Gson();
@@ -40,7 +40,7 @@ public class SorceryEngine {
     }
 
     /*
-    This allows the UI to upload a different applications JSON file.
+    Permite a la UI subir un archivo JSON de aplicaciones diferente.
     */
     public void setApplications(List<Model.Application> applications) {
         this.applications = applications;

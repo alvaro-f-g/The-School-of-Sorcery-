@@ -335,10 +335,10 @@ class SorceryEngineTest {
         assertEquals(4, results.size());
 
         /*
-        * "unknown" is intentionally not present in the points file,
-        * so every applicant receives score 0.
+        * "unknown" esta intencionalmente no presente en el archivo de puntos,
+        * por lo que cada solicitante recibe una puntuación de 0.
         *
-        * Expected order:
+        * Orden esperado:
         *
         * 1. Aaron Adams, 12
         * 2. Zoe Adams, 12

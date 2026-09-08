@@ -145,8 +145,7 @@ public class Main {
                         engine.process();
 
                 /*
-                * Save the latest processed results so results.json
-                * always reflects the current application file.
+                * Guarda los últimos resultados procesados para que results.json siempre refleje el archivo actual de la aplicación.
                 */
                 Path publicDir = Paths.get("public");
 
