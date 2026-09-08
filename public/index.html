@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School of Sorcery - Council Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-8">
+    <div class="max-w-6xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-amber-400 mb-2">School of Sorcery</h1>
+            <p class="text-slate-400">Council Admission Results & House Assignment Dashboard</p>
+        </header>
+
+        <!-- Real-time Search Bar -->
+        <div class="mb-8 max-w-md mx-auto">
+            <input type="text" id="search-input" placeholder="Search by student or family name..." 
+                   class="w-full bg-slate-800 border border-slate-700 text-slate-100 placeholder-slate-400 px-4 py-3 rounded-xl focus:outline-none focus:border-amber-400 transition-colors shadow-lg">
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Accepted Section -->
+            <div class="bg-slate-800 p-6 rounded-xl shadow-lg border border-slate-700">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+                    <h2 class="text-2xl font-semibold text-emerald-400 flex items-center justify-between w-full sm:w-auto">
+                        <span>Accepted (Top 50)</span>
+                    </h2>
+                    <span id="accepted-count" class="text-sm bg-emerald-900 text-emerald-300 px-3 py-1 rounded-full">0 places</span>
+                </div>
+                
+                <!-- House Filter Buttons -->
+                <div class="flex flex-wrap gap-1.5 mb-4 text-xs">
+                    <button onclick="filterHouse('ALL')" class="house-btn bg-slate-700 hover:bg-slate-600 text-slate-200 px-2.5 py-1 rounded transition font-semibold">All</button>
+                    <button onclick="filterHouse('Lion')" class="house-btn bg-indigo-950 hover:bg-indigo-900 text-indigo-300 px-2.5 py-1 rounded transition">Lion</button>
+                    <button onclick="filterHouse('Serpent')" class="house-btn bg-emerald-950 hover:bg-emerald-900 text-emerald-300 px-2.5 py-1 rounded transition">Serpent</button>
+                    <button onclick="filterHouse('Raven')" class="house-btn bg-sky-950 hover:bg-sky-900 text-sky-300 px-2.5 py-1 rounded transition">Raven</button>
+                    <button onclick="filterHouse('Badger')" class="house-btn bg-amber-950 hover:bg-amber-900 text-amber-300 px-2.5 py-1 rounded transition">Badger</button>
+                </div>
+
+                <div id="accepted-list" class="space-y-3 max-h-[480px] overflow-y-auto pr-2">
+                    <!-- Dynamic -->
+                </div>
+            </div>
+
+            <!-- Rejected Section -->
+            <div class="bg-slate-800 p-6 rounded-xl shadow-lg border border-slate-700">
+                <h2 class="text-2xl font-semibold text-rose-400 mb-4 flex items-center justify-between">
+                    <span>Rejected / Excluded</span>
+                    <span id="rejected-count" class="text-sm bg-rose-900 text-rose-300 px-3 py-1 rounded-full">0 total</span>
+                </h2>
+                <div id="rejected-list" class="space-y-3 max-h-[530px] overflow-y-auto pr-2">
+                    <!-- Dynamic -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allData = [];
+        let currentQuery = '';
+        let selectedHouse = 'ALL';
+
+        fetch('results.json')
+            .then(response => response.json())
+            .then(data => {
+                allData = data;
+                updateView();
+            })
+            .catch(err => {
+                console.error("Error loading results.json:", err);
+            });
+
+        // Search input event listener
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            currentQuery = e.target.value.toLowerCase();
+            updateView();
+        });
+
+        // House filter function
+        function filterHouse(house) {
+            selectedHouse = house;
+            updateView();
+        }
+
+        function updateView() {
+            // Filter data based on search query
+            let filtered = allData.filter(item => {
+                const fullName = `${item.application.firstName} ${item.application.familyName}`.toLowerCase();
+                return fullName.includes(currentQuery);
+            });
+
+            const acceptedContainer = document.getElementById('accepted-list');
+            const rejectedContainer = document.getElementById('rejected-list');
+            
+            let accepted = filtered.filter(item => item.accepted);
+            const rejected = filtered.filter(item => !item.accepted);
+
+            // Apply house filter specifically to accepted list
+            if (selectedHouse !== 'ALL') {
+                accepted = accepted.filter(item => item.house === selectedHouse);
+            }
+
+            document.getElementById('accepted-count').innerText = `${accepted.length} places`;
+            document.getElementById('rejected-count').innerText = `${rejected.length} total`;
+
+            acceptedContainer.innerHTML = accepted.map(item => `
+                <div class="bg-slate-700/50 p-3 rounded-lg border border-slate-600 flex justify-between items-center">
+                    <div>
+                        <span class="font-bold text-amber-300">#${item.rank} - ${item.application.firstName} ${item.application.familyName}</span>
+                        <p class="text-xs text-slate-400">Age: ${item.application.age} | Virtue: ${item.application.virtue} | Pts: ${item.score}</p>
+                    </div>
+                    <span class="bg-indigo-900 text-indigo-200 text-xs font-semibold px-2.5 py-1 rounded shadow">${item.house}</span>
+                </div>
+            `).join('') || '<p class="text-slate-400 text-center py-4">No matching accepted students found.</p>';
+
+            rejectedContainer.innerHTML = rejected.map(item => {
+                let reasonText = item.rejectionReason;
+                if (!isNaN(reasonText)) {
+                    reasonText = `Rank #${reasonText} (No places left)`;
+                }
+                return `
+                    <div class="bg-slate-700/50 p-3 rounded-lg border border-slate-600 flex justify-between items-center">
+                        <div>
+                            <span class="font-bold text-slate-200">${item.application.firstName} ${item.application.familyName}</span>
+                            <p class="text-xs text-rose-300">Reason: ${reasonText}</p>
+                        </div>
+                        <span class="text-xs text-slate-400">Age: ${item.application.age}</span>
+                    </div>
+                `;
+            }).join('') || '<p class="text-slate-400 text-center py-4">No matching rejected applications found.</p>';
+        }
+    </script>
+</body>
+</html>
