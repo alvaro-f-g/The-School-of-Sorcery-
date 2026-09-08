@@ -30,119 +30,126 @@ public class SorceryEngine {
     }
 
     public List<Model.StudentResult> process() {
-        List<Model.StudentResult> invited = new ArrayList<>();
-        List<Model.StudentResult> candidates = new ArrayList<>();
+
+        // Aplicaciones que participan en el ranking:
+        // candidatos que pasan los vetos + invitados.
+        List<Model.StudentResult> ranked = new ArrayList<>();
+
+        // Aplicaciones rechazadas inmediatamente por un veto.
         List<Model.StudentResult> vetoed = new ArrayList<>();
 
         /*
-         * First pass:
-         * - Invitations are guaranteed a place and override all vetoes.
-         * - Non-invited applications go through the veto checks.
+         * PASO 1
+         * Procesar aplicaciones.
+         *
+         * Los invitados ignoran completamente los vetos.
+         * Los demás deben superarlos para participar en el ranking.
          */
         for (Model.Application app : applications) {
-            Model.StudentResult res = new Model.StudentResult(app);
 
-            String fullName = app.getFirstName() + " " + app.getFamilyName();
+            Model.StudentResult result = new Model.StudentResult(app);
 
-            boolean isInvited =
-                    rules.getInvitations() != null
-                    && rules.getInvitations().contains(fullName);
-
-            if (isInvited) {
-                res.setAccepted(true);
-                res.setScore(calculateScore(app));
-                invited.add(res);
+            if (isInvited(app)) {
+                result.setScore(calculateScore(app));
+                ranked.add(result);
                 continue;
             }
 
             String vetoReason = checkVetoes(app);
 
             if (vetoReason != null) {
-                res.setAccepted(false);
-                res.setRejectionReason(vetoReason);
-                vetoed.add(res);
+                result.setAccepted(false);
+                result.setRejectionReason(vetoReason);
+                vetoed.add(result);
             } else {
-                res.setAccepted(true);
-                res.setScore(calculateScore(app));
-                candidates.add(res);
+                result.setScore(calculateScore(app));
+                ranked.add(result);
             }
         }
 
         /*
-         * Invitations are guaranteed places.
+         * PASO 2
+         * Crear el ranking REAL.
          *
-         * Their order must also be deterministic, so we sort them using
-         * the same ranking rules plus the application ID as final tie-breaker.
+         * Los invitados no reciben una posición especial.
+         * Se ordenan exactamente igual que el resto.
          */
-        sortByRanking(invited);
+        ranked.sort(this::compareByRankingRules);
 
         /*
-         * Normal candidates are ranked by:
-         * 1. Score descending
-         * 2. Age ascending
-         * 3. Family name alphabetically
-         * 4. First name alphabetically
-         * 5. Application ID as final deterministic tie-breaker
+         * PASO 3
+         * Asignar una posición a TODOS los participantes del ranking.
          */
-        sortByRanking(candidates);
+        for (int i = 0; i < ranked.size(); i++) {
+            ranked.get(i).setRank(i + 1);
+        }
 
         /*
-         * The invited students consume places first.
+         * PASO 4
+         * Las invitaciones tienen plaza garantizada y consumen
+         * una de las plazas disponibles.
          */
         int placesLimit = rules.getPlaces();
 
-        List<Model.StudentResult> admitted = new ArrayList<>();
-        List<Model.StudentResult> rejectedByPosition = new ArrayList<>();
-
-        int placesUsed = 0;
-
-        for (Model.StudentResult student : invited) {
-            if (placesUsed < placesLimit) {
-                student.setAccepted(true);
-                student.setRank(++placesUsed);
-                student.setHouse(assignHouse(student.getApplication()));
-                admitted.add(student);
-            } else {
-                /*
-                 * This should only happen if the rules contain more
-                 * invitations than available places.
-                 */
-                student.setAccepted(false);
-                student.setRank(placesUsed + 1);
-                student.setRejectionReason(String.valueOf(student.getRank()));
-                rejectedByPosition.add(student);
-            }
-        }
+        long invitedCount = ranked.stream()
+                .filter(r -> isInvited(r.getApplication()))
+                .count();
 
         /*
-         * Fill the remaining places with the best normal candidates.
+         * En unos datos válidos debería haber como máximo tantas
+         * invitaciones como plazas.
          */
-        for (Model.StudentResult student : candidates) {
-            if (placesUsed < placesLimit) {
-                student.setAccepted(true);
-                student.setRank(++placesUsed);
-                student.setHouse(assignHouse(student.getApplication()));
-                admitted.add(student);
+        if (invitedCount > placesLimit) {
+            throw new IllegalStateException(
+                    "There are more invited applicants than available places."
+            );
+        }
+
+        int normalPlacesAvailable = placesLimit - (int) invitedCount;
+
+        /*
+         * PASO 5
+         * Admitir:
+         *
+         * - TODOS los invitados.
+         * - Los mejores candidatos normales hasta completar
+         *   las plazas restantes.
+         */
+        int normalApplicantsAccepted = 0;
+
+        for (Model.StudentResult result : ranked) {
+
+            if (isInvited(result.getApplication())) {
+
+                result.setAccepted(true);
+                result.setHouse(assignHouse(result.getApplication()));
+
+            } else if (normalApplicantsAccepted < normalPlacesAvailable) {
+
+                result.setAccepted(true);
+                result.setHouse(assignHouse(result.getApplication()));
+                normalApplicantsAccepted++;
+
             } else {
-                student.setAccepted(false);
+
+                result.setAccepted(false);
 
                 /*
-                 * Rank is the student's actual position in the complete
-                 * admission ranking.
+                 * El enunciado pide que para los rechazados por falta
+                 * de plazas se informe de su posición.
                  */
-                student.setRank(placesUsed + rejectedByPosition.size() + 1);
-                student.setRejectionReason(String.valueOf(student.getRank()));
-
-                rejectedByPosition.add(student);
+                result.setRejectionReason(
+                        String.valueOf(result.getRank())
+                );
             }
         }
 
         /*
-         * The vetoed applications do not participate in the ranking.
-         * Their rejection reason is the veto itself.
+         * PASO 6
+         * Los vetados no participan en el ranking.
          *
-         * Sort by ID to guarantee deterministic output regardless
-         * of the input application order.
+         * Los ordenamos por ID para que el resultado sea determinista
+         * aunque se cambie el orden del fichero de entrada.
          */
         vetoed.sort(
                 Comparator.comparing(
@@ -151,100 +158,155 @@ public class SorceryEngine {
         );
 
         /*
-         * Final output:
-         * 1. Admitted students
-         * 2. Students rejected because there were no places
-         * 3. Students rejected by veto
+         * PASO 7
+         * Resultado final.
+         *
+         * Primero aparece el ranking completo de las aplicaciones
+         * que llegaron a la fase de puntuación.
+         *
+         * Después aparecen los vetados.
          */
         List<Model.StudentResult> finalOutput = new ArrayList<>();
 
-        finalOutput.addAll(admitted);
-        finalOutput.addAll(rejectedByPosition);
+        finalOutput.addAll(ranked);
         finalOutput.addAll(vetoed);
 
         return finalOutput;
     }
 
     /**
-     * Sort applications according to the council ranking rules.
+     * Comprueba si una persona fue invitada personalmente
+     * por el headmaster.
      */
-    private void sortByRanking(List<Model.StudentResult> students) {
-        students.sort((a, b) -> {
+    private boolean isInvited(Model.Application app) {
 
-            // 1. Score: highest first
-            if (a.getScore() != b.getScore()) {
-                return Integer.compare(b.getScore(), a.getScore());
-            }
+        if (rules.getInvitations() == null) {
+            return false;
+        }
 
-            // 2. Age: youngest first
-            if (a.getApplication().getAge() != b.getApplication().getAge()) {
-                return Integer.compare(
+        String fullName =
+                app.getFirstName() + " " + app.getFamilyName();
+
+        return rules.getInvitations().contains(fullName);
+    }
+
+    /**
+     * Comparador del ranking.
+     *
+     * Orden:
+     * 1. Score más alto.
+     * 2. Menor edad.
+     * 3. Apellido alfabéticamente.
+     * 4. Nombre alfabéticamente.
+     * 5. ID como desempate final para garantizar determinismo.
+     */
+    private int compareByRankingRules(
+            Model.StudentResult a,
+            Model.StudentResult b) {
+
+        // 1. Score descendente
+        int scoreComparison =
+                Integer.compare(b.getScore(), a.getScore());
+
+        if (scoreComparison != 0) {
+            return scoreComparison;
+        }
+
+        // 2. Más joven primero
+        int ageComparison =
+                Integer.compare(
                         a.getApplication().getAge(),
                         b.getApplication().getAge()
                 );
-            }
 
-            // 3. Family name: alphabetical
-            int familyComp = a.getApplication()
-                    .getFamilyName()
-                    .compareTo(b.getApplication().getFamilyName());
+        if (ageComparison != 0) {
+            return ageComparison;
+        }
 
-            if (familyComp != 0) {
-                return familyComp;
-            }
+        // 3. Apellido
+        int familyComparison =
+                a.getApplication()
+                        .getFamilyName()
+                        .compareTo(
+                                b.getApplication().getFamilyName()
+                        );
 
-            // 4. First name: alphabetical
-            int nameComp = a.getApplication()
-                    .getFirstName()
-                    .compareTo(b.getApplication().getFirstName());
+        if (familyComparison != 0) {
+            return familyComparison;
+        }
 
-            if (nameComp != 0) {
-                return nameComp;
-            }
+        // 4. Nombre
+        int firstNameComparison =
+                a.getApplication()
+                        .getFirstName()
+                        .compareTo(
+                                b.getApplication().getFirstName()
+                        );
 
-            // 5. ID: deterministic final tie-breaker
-            return a.getApplication()
-                    .getId()
-                    .compareTo(b.getApplication().getId());
-        });
+        if (firstNameComparison != 0) {
+            return firstNameComparison;
+        }
+
+        /*
+         * 5. ID.
+         *
+         * El PDF no necesita este desempate en circunstancias normales,
+         * pero evita depender del orden del JSON si dos solicitudes
+         * fueran idénticas en todos los criterios anteriores.
+         */
+        return a.getApplication()
+                .getId()
+                .compareTo(
+                        b.getApplication().getId()
+                );
     }
 
+    /**
+     * Comprueba los vetos EN EL ORDEN indicado por el council.
+     *
+     * Si se cumplen varios, solamente se devuelve el primero.
+     */
     private String checkVetoes(Model.Application app) {
 
-        // 1. Banned family
+        // 1. Familia prohibida
         if (rules.getBannedFamilies() != null
-                && rules.getBannedFamilies().contains(app.getFamilyName())) {
+                && rules.getBannedFamilies()
+                        .contains(app.getFamilyName())) {
 
             return "Banned family";
         }
 
-        // 2. Age range
+        // 2. Fuera del rango de edad
         if (app.getAge() < rules.getAgeRange().getMin()
                 || app.getAge() > rules.getAgeRange().getMax()) {
 
             return "Out of age range";
         }
 
-        // 3. Unacceptable weakness
+        // 3. Debilidad no aceptada
         if (rules.getUnacceptableWeaknesses() != null
-                && rules.getUnacceptableWeaknesses().contains(app.getWeakness())) {
+                && rules.getUnacceptableWeaknesses()
+                        .contains(app.getWeakness())) {
 
             return "Unacceptable weakness";
         }
 
-        // 4. Application dates
-        LocalDate appDate = LocalDate.parse(app.getApplicationDate());
+        // 4. Fuera de las fechas de solicitud
+        LocalDate applicationDate =
+                LocalDate.parse(app.getApplicationDate());
 
-        LocalDate startDate = LocalDate.parse(
-                rules.getApplicationDates().get("from")
-        );
+        LocalDate startDate =
+                LocalDate.parse(
+                        rules.getApplicationDates().get("from")
+                );
 
-        LocalDate endDate = LocalDate.parse(
-                rules.getApplicationDates().get("to")
-        );
+        LocalDate endDate =
+                LocalDate.parse(
+                        rules.getApplicationDates().get("to")
+                );
 
-        if (appDate.isBefore(startDate)
-                || appDate.isAfter(endDate)) {
+        if (applicationDate.isBefore(startDate)
+                || applicationDate.isAfter(endDate)) {
 
             return "Outside application dates";
         }
@@ -252,41 +314,42 @@ public class SorceryEngine {
         return null;
     }
 
+    /**
+     * Calcula exclusivamente la puntuación de admisión.
+     */
     private int calculateScore(Model.Application app) {
 
         int score = 0;
-        Model.PointsConfig pts = rules.getPoints();
 
-        // Virtue
-        if (pts.getVirtue() != null
-                && pts.getVirtue().containsKey(app.getVirtue())) {
+        Model.PointsConfig points = rules.getPoints();
 
-            score += pts.getVirtue().get(app.getVirtue());
+        // Virtud
+        if (points.getVirtue() != null) {
+            score += points.getVirtue()
+                    .getOrDefault(app.getVirtue(), 0);
         }
 
-        // Family
-        if (pts.getFamily() != null
-                && pts.getFamily().containsKey(app.getFamilyName())) {
-
-            score += pts.getFamily().get(app.getFamilyName());
+        // Familia
+        if (points.getFamily() != null) {
+            score += points.getFamily()
+                    .getOrDefault(app.getFamilyName(), 0);
         }
 
-        // Weakness
-        if (pts.getWeakness() != null
-                && pts.getWeakness().containsKey(app.getWeakness())) {
-
-            score += pts.getWeakness().get(app.getWeakness());
+        // Debilidad
+        if (points.getWeakness() != null) {
+            score += points.getWeakness()
+                    .getOrDefault(app.getWeakness(), 0);
         }
 
-        // Age
-        if (pts.getAge() != null) {
+        // Edad
+        if (points.getAge() != null) {
 
-            for (Model.AgePointRule arp : pts.getAge()) {
+            for (Model.AgePointRule ageRule : points.getAge()) {
 
-                if (app.getAge() >= arp.getFrom()
-                        && app.getAge() <= arp.getTo()) {
+                if (app.getAge() >= ageRule.getFrom()
+                        && app.getAge() <= ageRule.getTo()) {
 
-                    score += arp.getPoints();
+                    score += ageRule.getPoints();
                     break;
                 }
             }
@@ -295,46 +358,55 @@ public class SorceryEngine {
         return score;
     }
 
+    /**
+     * Calcula la casa de un alumno admitido.
+     *
+     * Este cálculo es totalmente independiente del score
+     * utilizado para el ranking.
+     */
     private String assignHouse(Model.Application app) {
 
         String bestHouse = null;
-        int maxHouseScore = Integer.MIN_VALUE;
+
+        int bestHouseScore = Integer.MIN_VALUE;
 
         /*
-         * Houses are evaluated in exactly the order in which they
-         * appear in council-rules.json.
+         * Es fundamental mantener el orden del JSON.
          *
-         * Using '>' instead of '>=' means that ties go to the
-         * house appearing first in the rules file.
+         * Como solamente sustituimos bestHouse cuando encontramos
+         * una puntuación ESTRICTAMENTE mayor, un empate mantiene
+         * la primera casa del fichero.
          */
         for (Model.HouseConfig house : rules.getHouses()) {
 
             int houseScore = 0;
-            Model.PointsConfig hPts = house.getPoints();
 
-            if (hPts != null) {
+            Model.PointsConfig housePoints =
+                    house.getPoints();
 
-                if (hPts.getVirtue() != null
-                        && hPts.getVirtue().containsKey(app.getVirtue())) {
+            if (housePoints != null) {
 
-                    houseScore += hPts.getVirtue().get(app.getVirtue());
+                // Virtud
+                if (housePoints.getVirtue() != null) {
+                    houseScore += housePoints.getVirtue()
+                            .getOrDefault(app.getVirtue(), 0);
                 }
 
-                if (hPts.getWeakness() != null
-                        && hPts.getWeakness().containsKey(app.getWeakness())) {
-
-                    houseScore += hPts.getWeakness().get(app.getWeakness());
+                // Debilidad
+                if (housePoints.getWeakness() != null) {
+                    houseScore += housePoints.getWeakness()
+                            .getOrDefault(app.getWeakness(), 0);
                 }
 
-                if (hPts.getFamily() != null
-                        && hPts.getFamily().containsKey(app.getFamilyName())) {
-
-                    houseScore += hPts.getFamily().get(app.getFamilyName());
+                // Familia
+                if (housePoints.getFamily() != null) {
+                    houseScore += housePoints.getFamily()
+                            .getOrDefault(app.getFamilyName(), 0);
                 }
             }
 
-            if (houseScore > maxHouseScore) {
-                maxHouseScore = houseScore;
+            if (houseScore > bestHouseScore) {
+                bestHouseScore = houseScore;
                 bestHouse = house.getName();
             }
         }
