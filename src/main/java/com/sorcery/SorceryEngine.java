@@ -14,12 +14,9 @@ public class SorceryEngine {
     private List<Model.Application> applications;
 
     public void loadData(Path dataDir) throws IOException {
-        Gson gson = new Gson();
+        loadRules(dataDir);
 
-        rules = gson.fromJson(
-                new FileReader(dataDir.resolve("council-rules.json").toFile()),
-                Model.CouncilRules.class
-        );
+        Gson gson = new Gson();
 
         Model.ApplicationsContainer container = gson.fromJson(
                 new FileReader(dataDir.resolve("applications.json").toFile()),
@@ -27,6 +24,26 @@ public class SorceryEngine {
         );
 
         applications = container.getApplications();
+    }
+
+    /**
+     * Loads only the council rules.
+     * Used by the web interface when applications are uploaded by the user.
+     */
+    public void loadRules(Path dataDir) throws IOException {
+        Gson gson = new Gson();
+
+        rules = gson.fromJson(
+                new FileReader(dataDir.resolve("council-rules.json").toFile()),
+                Model.CouncilRules.class
+        );
+    }
+
+    /*
+    This allows the UI to upload a different applications JSON file.
+    */
+    public void setApplications(List<Model.Application> applications) {
+        this.applications = applications;
     }
 
     public List<Model.StudentResult> process() {

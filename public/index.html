@@ -1,135 +1,844 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>School of Sorcery - Council Dashboard</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen p-8">
+
+<body class="bg-slate-900 text-slate-100 min-h-screen p-5 md:p-8">
+
     <div class="max-w-6xl mx-auto">
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-amber-400 mb-2">School of Sorcery</h1>
-            <p class="text-slate-400">Council Admission Results & House Assignment Dashboard</p>
+
+        <!-- HEADER -->
+        <header class="text-center mb-6">
+            <h1 class="text-4xl font-bold text-amber-400 mb-1">
+                School of Sorcery
+            </h1>
+
+            <p class="text-slate-400 text-sm">
+                Council Admission Results & House Assignment Dashboard
+            </p>
         </header>
 
-        <!-- Real-time Search Bar -->
-        <div class="mb-8 max-w-md mx-auto">
-            <input type="text" id="search-input" placeholder="Search by student or family name..." 
-                   class="w-full bg-slate-800 border border-slate-700 text-slate-100 placeholder-slate-400 px-4 py-3 rounded-xl focus:outline-none focus:border-amber-400 transition-colors shadow-lg">
+
+        <!-- UPLOAD -->
+        <section class="bg-slate-800 border border-slate-700 rounded-xl p-4 mb-4 shadow-lg">
+
+            <div class="flex flex-col md:flex-row md:items-center gap-3">
+
+                <div class="flex-1">
+                    <p class="text-sm font-semibold text-slate-200 mb-1">
+                        Applications file
+                    </p>
+
+                    <input
+                        type="file"
+                        id="applications-file"
+                        accept=".json,application/json"
+                        class="block w-full text-sm text-slate-300
+                               file:mr-3 file:py-2 file:px-3
+                               file:rounded-lg file:border-0
+                               file:text-sm file:font-semibold
+                               file:bg-slate-700 file:text-slate-200
+                               hover:file:bg-slate-600
+                               cursor-pointer"
+                    >
+                </div>
+
+                <button
+                    id="process-button"
+                    class="bg-amber-500 hover:bg-amber-400
+                           disabled:bg-slate-600 disabled:text-slate-400
+                           disabled:cursor-not-allowed
+                           text-slate-950 font-semibold
+                           px-5 py-2 rounded-lg transition
+                           md:mt-5"
+                >
+                    Process Applications
+                </button>
+
+            </div>
+
+
+            <div
+                id="upload-status"
+                class="hidden mt-3 text-sm rounded-lg px-3 py-2"
+            ></div>
+
+        </section>
+
+
+        <!-- SUMMARY -->
+        <div class="flex flex-wrap justify-center gap-x-7 gap-y-2 mb-5 text-sm">
+
+            <span class="text-slate-400">
+                Applications:
+                <strong
+                    id="total-applications"
+                    class="text-slate-100"
+                >
+                    0
+                </strong>
+            </span>
+
+            <span class="text-slate-400">
+                Accepted:
+                <strong
+                    id="total-accepted"
+                    class="text-emerald-400"
+                >
+                    0
+                </strong>
+            </span>
+
+            <span class="text-slate-400">
+                Rejected:
+                <strong
+                    id="total-rejected"
+                    class="text-rose-400"
+                >
+                    0
+                </strong>
+            </span>
+
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <!-- Accepted Section -->
-            <div class="bg-slate-800 p-6 rounded-xl shadow-lg border border-slate-700">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
-                    <h2 class="text-2xl font-semibold text-emerald-400 flex items-center justify-between w-full sm:w-auto">
-                        <span>Accepted (Top 50)</span>
+
+        <!-- SEARCH -->
+        <div class="mb-5 max-w-md mx-auto">
+
+            <input
+                type="text"
+                id="search-input"
+                placeholder="Search by student or family name..."
+                class="w-full bg-slate-800 border border-slate-700
+                       text-slate-100 placeholder-slate-400
+                       px-4 py-2.5 rounded-xl
+                       focus:outline-none focus:border-amber-400
+                       transition-colors shadow-lg"
+            >
+
+        </div>
+
+
+        <!-- RESULTS -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+
+            <!-- ACCEPTED -->
+            <section class="bg-slate-800 p-5 rounded-xl shadow-lg border border-slate-700">
+
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
+
+                    <h2 class="text-2xl font-semibold text-emerald-400">
+                        Accepted Students
                     </h2>
-                    <span id="accepted-count" class="text-sm bg-emerald-900 text-emerald-300 px-3 py-1 rounded-full">0 places</span>
+
+                    <span
+                        id="accepted-count"
+                        class="text-xs bg-emerald-900 text-emerald-300 px-3 py-1 rounded-full"
+                    >
+                        0 shown
+                    </span>
+
                 </div>
-                
-                <!-- House Filter Buttons -->
+
+
+                <!-- HOUSE FILTER -->
                 <div class="flex flex-wrap gap-1.5 mb-4 text-xs">
-                    <button onclick="filterHouse('ALL')" class="house-btn bg-slate-700 hover:bg-slate-600 text-slate-200 px-2.5 py-1 rounded transition font-semibold">All</button>
-                    <button onclick="filterHouse('Lion')" class="house-btn bg-indigo-950 hover:bg-indigo-900 text-indigo-300 px-2.5 py-1 rounded transition">Lion</button>
-                    <button onclick="filterHouse('Serpent')" class="house-btn bg-emerald-950 hover:bg-emerald-900 text-emerald-300 px-2.5 py-1 rounded transition">Serpent</button>
-                    <button onclick="filterHouse('Raven')" class="house-btn bg-sky-950 hover:bg-sky-900 text-sky-300 px-2.5 py-1 rounded transition">Raven</button>
-                    <button onclick="filterHouse('Badger')" class="house-btn bg-amber-950 hover:bg-amber-900 text-amber-300 px-2.5 py-1 rounded transition">Badger</button>
+
+                    <button
+                        onclick="filterHouse('ALL')"
+                        class="house-btn bg-slate-700 hover:bg-slate-600
+                               text-slate-200 px-2.5 py-1 rounded transition font-semibold"
+                    >
+                        All
+                    </button>
+
+                    <button
+                        onclick="filterHouse('Lion')"
+                        class="house-btn bg-indigo-950 hover:bg-indigo-900
+                               text-indigo-300 px-2.5 py-1 rounded transition"
+                    >
+                        Lion
+                    </button>
+
+                    <button
+                        onclick="filterHouse('Serpent')"
+                        class="house-btn bg-emerald-950 hover:bg-emerald-900
+                               text-emerald-300 px-2.5 py-1 rounded transition"
+                    >
+                        Serpent
+                    </button>
+
+                    <button
+                        onclick="filterHouse('Raven')"
+                        class="house-btn bg-sky-950 hover:bg-sky-900
+                               text-sky-300 px-2.5 py-1 rounded transition"
+                    >
+                        Raven
+                    </button>
+
+                    <button
+                        onclick="filterHouse('Badger')"
+                        class="house-btn bg-amber-950 hover:bg-amber-900
+                               text-amber-300 px-2.5 py-1 rounded transition"
+                    >
+                        Badger
+                    </button>
+
                 </div>
 
-                <div id="accepted-list" class="space-y-3 max-h-[480px] overflow-y-auto pr-2">
-                    <!-- Dynamic -->
-                </div>
-            </div>
 
-            <!-- Rejected Section -->
-            <div class="bg-slate-800 p-6 rounded-xl shadow-lg border border-slate-700">
-                <h2 class="text-2xl font-semibold text-rose-400 mb-4 flex items-center justify-between">
-                    <span>Rejected / Excluded</span>
-                    <span id="rejected-count" class="text-sm bg-rose-900 text-rose-300 px-3 py-1 rounded-full">0 total</span>
-                </h2>
-                <div id="rejected-list" class="space-y-3 max-h-[530px] overflow-y-auto pr-2">
-                    <!-- Dynamic -->
+                <div
+                    id="accepted-list"
+                    class="space-y-3 max-h-[560px] overflow-y-auto pr-2"
+                >
                 </div>
-            </div>
+
+            </section>
+
+
+            <!-- REJECTED -->
+            <section class="bg-slate-800 p-5 rounded-xl shadow-lg border border-slate-700">
+
+                <div class="flex justify-between items-center mb-4">
+
+                    <h2 class="text-2xl font-semibold text-rose-400">
+                        Rejected / Excluded
+                    </h2>
+
+                    <span
+                        id="rejected-count"
+                        class="text-xs bg-rose-900 text-rose-300 px-3 py-1 rounded-full"
+                    >
+                        0 shown
+                    </span>
+
+                </div>
+
+
+                <div
+                    id="rejected-list"
+                    class="space-y-3 max-h-[600px] overflow-y-auto pr-2"
+                >
+                </div>
+
+            </section>
+
         </div>
+
     </div>
 
+
     <script>
+
         let allData = [];
         let currentQuery = '';
         let selectedHouse = 'ALL';
 
+
+        /*
+         * INITIAL RESULTS
+         */
         fetch('results.json')
-            .then(response => response.json())
+            .then(response => {
+
+                if (!response.ok) {
+                    throw new Error('Unable to load results.json');
+                }
+
+                return response.json();
+            })
             .then(data => {
+
                 allData = data;
+
+                updateSummary();
                 updateView();
             })
-            .catch(err => {
-                console.error("Error loading results.json:", err);
+            .catch(error => {
+
+                console.error(
+                    'Error loading initial results:',
+                    error
+                );
+
             });
 
-        // Search input event listener
-        document.getElementById('search-input').addEventListener('input', (e) => {
-            currentQuery = e.target.value.toLowerCase();
-            updateView();
-        });
 
-        // House filter function
-        function filterHouse(house) {
-            selectedHouse = house;
-            updateView();
-        }
+        /*
+         * PROCESS UPLOADED FILE
+         */
+        document
+            .getElementById('process-button')
+            .addEventListener('click', processUploadedFile);
 
-        function updateView() {
-            // Filter data based on search query
-            let filtered = allData.filter(item => {
-                const fullName = `${item.application.firstName} ${item.application.familyName}`.toLowerCase();
-                return fullName.includes(currentQuery);
-            });
 
-            const acceptedContainer = document.getElementById('accepted-list');
-            const rejectedContainer = document.getElementById('rejected-list');
-            
-            let accepted = filtered.filter(item => item.accepted);
-            const rejected = filtered.filter(item => !item.accepted);
+        async function processUploadedFile() {
 
-            // Apply house filter specifically to accepted list
-            if (selectedHouse !== 'ALL') {
-                accepted = accepted.filter(item => item.house === selectedHouse);
+            const fileInput =
+                document.getElementById('applications-file');
+
+            const button =
+                document.getElementById('process-button');
+
+            const file = fileInput.files[0];
+
+
+            if (!file) {
+
+                showStatus(
+                    'Please select an applications JSON file first.',
+                    'error'
+                );
+
+                return;
             }
 
-            document.getElementById('accepted-count').innerText = `${accepted.length} places`;
-            document.getElementById('rejected-count').innerText = `${rejected.length} total`;
 
-            acceptedContainer.innerHTML = accepted.map(item => `
-                <div class="bg-slate-700/50 p-3 rounded-lg border border-slate-600 flex justify-between items-center">
-                    <div>
-                        <span class="font-bold text-amber-300">#${item.rank} - ${item.application.firstName} ${item.application.familyName}</span>
-                        <p class="text-xs text-slate-400">Age: ${item.application.age} | Virtue: ${item.application.virtue} | Pts: ${item.score}</p>
-                    </div>
-                    <span class="bg-indigo-900 text-indigo-200 text-xs font-semibold px-2.5 py-1 rounded shadow">${item.house}</span>
-                </div>
-            `).join('') || '<p class="text-slate-400 text-center py-4">No matching accepted students found.</p>';
+            if (!file.name.toLowerCase().endsWith('.json')) {
 
-            rejectedContainer.innerHTML = rejected.map(item => {
-                let reasonText = item.rejectionReason;
-                if (!isNaN(reasonText)) {
-                    reasonText = `Rank #${reasonText} (No places left)`;
+                showStatus(
+                    'The selected file must be a JSON file.',
+                    'error'
+                );
+
+                return;
+            }
+
+
+            try {
+
+                button.disabled = true;
+                button.innerText = 'Processing...';
+
+                showStatus(
+                    `Processing ${file.name}...`,
+                    'loading'
+                );
+
+
+                const jsonText =
+                    await file.text();
+
+
+                let parsed;
+
+                try {
+
+                    parsed = JSON.parse(jsonText);
+
+                } catch {
+
+                    throw new Error(
+                        'The selected file does not contain valid JSON.'
+                    );
                 }
-                return `
-                    <div class="bg-slate-700/50 p-3 rounded-lg border border-slate-600 flex justify-between items-center">
-                        <div>
-                            <span class="font-bold text-slate-200">${item.application.firstName} ${item.application.familyName}</span>
-                            <p class="text-xs text-rose-300">Reason: ${reasonText}</p>
-                        </div>
-                        <span class="text-xs text-slate-400">Age: ${item.application.age}</span>
-                    </div>
-                `;
-            }).join('') || '<p class="text-slate-400 text-center py-4">No matching rejected applications found.</p>';
+
+
+                if (
+                    !parsed ||
+                    !Array.isArray(parsed.applications)
+                ) {
+
+                    throw new Error(
+                        'Invalid applications file. Expected an "applications" array.'
+                    );
+                }
+
+
+                const response =
+                    await fetch('/api/process', {
+
+                        method: 'POST',
+
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+
+                        body: jsonText
+                    });
+
+
+                let responseData;
+
+                try {
+
+                    responseData =
+                        await response.json();
+
+                } catch {
+
+                    throw new Error(
+                        'The server returned an invalid response.'
+                    );
+                }
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        responseData.error ||
+                        'Unable to process applications.'
+                    );
+                }
+
+
+                allData = responseData;
+
+                currentQuery = '';
+                selectedHouse = 'ALL';
+
+                document.getElementById(
+                    'search-input'
+                ).value = '';
+
+
+                updateSummary();
+                updateView();
+
+
+                const accepted =
+                    allData.filter(
+                        item => item.accepted
+                    ).length;
+
+
+                const rejected =
+                    allData.length - accepted;
+
+
+                showStatus(
+                    `${file.name} processed successfully — ` +
+                    `${allData.length} applications, ` +
+                    `${accepted} accepted and ` +
+                    `${rejected} rejected.`,
+                    'success'
+                );
+
+
+            } catch (error) {
+
+                console.error(error);
+
+                showStatus(
+                    error.message ||
+                    'Unable to process the selected file.',
+                    'error'
+                );
+
+            } finally {
+
+                button.disabled = false;
+                button.innerText =
+                    'Process Applications';
+
+            }
         }
+
+
+        /*
+         * STATUS MESSAGE
+         */
+        function showStatus(message, type) {
+
+            const element =
+                document.getElementById('upload-status');
+
+            element.classList.remove(
+                'hidden',
+                'bg-emerald-950',
+                'text-emerald-300',
+                'border',
+                'border-emerald-800',
+                'bg-rose-950',
+                'text-rose-300',
+                'border-rose-800',
+                'bg-slate-700',
+                'text-slate-300',
+                'border-slate-600'
+            );
+
+
+            if (type === 'success') {
+
+                element.classList.add(
+                    'bg-emerald-950',
+                    'text-emerald-300',
+                    'border',
+                    'border-emerald-800'
+                );
+
+            } else if (type === 'error') {
+
+                element.classList.add(
+                    'bg-rose-950',
+                    'text-rose-300',
+                    'border',
+                    'border-rose-800'
+                );
+
+            } else {
+
+                element.classList.add(
+                    'bg-slate-700',
+                    'text-slate-300',
+                    'border',
+                    'border-slate-600'
+                );
+            }
+
+
+            element.innerText = message;
+        }
+
+
+        /*
+         * SEARCH
+         */
+        document
+            .getElementById('search-input')
+            .addEventListener('input', event => {
+
+                currentQuery =
+                    event.target.value.toLowerCase();
+
+                updateView();
+            });
+
+
+        /*
+         * HOUSE FILTER
+         */
+        function filterHouse(house) {
+
+            selectedHouse = house;
+
+            updateView();
+        }
+
+
+        /*
+         * SUMMARY
+         */
+        function updateSummary() {
+
+            const total =
+                allData.length;
+
+            const accepted =
+                allData.filter(
+                    item => item.accepted
+                ).length;
+
+            const rejected =
+                total - accepted;
+
+
+            document.getElementById(
+                'total-applications'
+            ).innerText = total;
+
+            document.getElementById(
+                'total-accepted'
+            ).innerText = accepted;
+
+            document.getElementById(
+                'total-rejected'
+            ).innerText = rejected;
+        }
+
+
+        /*
+         * ESCAPE HTML
+         */
+        function escapeHtml(value) {
+
+            if (value === null || value === undefined) {
+                return '';
+            }
+
+            return String(value)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
+        }
+
+
+        /*
+         * UPDATE VIEW
+         */
+        function updateView() {
+
+            let filtered =
+                allData.filter(item => {
+
+                    const fullName =
+                        `${item.application.firstName} ${item.application.familyName}`
+                            .toLowerCase();
+
+                    return fullName.includes(
+                        currentQuery
+                    );
+                });
+
+
+            let accepted =
+                filtered.filter(
+                    item => item.accepted
+                );
+
+
+            const rejected =
+                filtered.filter(
+                    item => !item.accepted
+                );
+
+
+            if (selectedHouse !== 'ALL') {
+
+                accepted =
+                    accepted.filter(
+                        item =>
+                            item.house === selectedHouse
+                    );
+            }
+
+
+            accepted.sort(
+                (a, b) =>
+                    (a.rank || Number.MAX_SAFE_INTEGER) -
+                    (b.rank || Number.MAX_SAFE_INTEGER)
+            );
+
+
+            document.getElementById(
+                'accepted-count'
+            ).innerText =
+                `${accepted.length} shown`;
+
+
+            document.getElementById(
+                'rejected-count'
+            ).innerText =
+                `${rejected.length} shown`;
+
+
+            renderAccepted(accepted);
+            renderRejected(rejected);
+        }
+
+
+        /*
+         * ACCEPTED LIST
+         */
+        function renderAccepted(accepted) {
+
+            const container =
+                document.getElementById(
+                    'accepted-list'
+                );
+
+
+            container.innerHTML =
+                accepted.map(item => {
+
+                    const app =
+                        item.application;
+
+
+                    return `
+                        <div class="
+                            bg-slate-700/50
+                            p-3
+                            rounded-lg
+                            border border-slate-600
+                            flex justify-between items-center
+                            gap-4
+                        ">
+
+                            <div>
+
+                                <span class="
+                                    font-bold
+                                    text-amber-300
+                                ">
+                                    #${escapeHtml(item.rank)}
+                                    -
+                                    ${escapeHtml(app.firstName)}
+                                    ${escapeHtml(app.familyName)}
+                                </span>
+
+
+                                <p class="
+                                    text-xs
+                                    text-slate-400
+                                    mt-1
+                                ">
+                                    Age:
+                                    ${escapeHtml(app.age)}
+                                    |
+                                    Virtue:
+                                    ${escapeHtml(app.virtue)}
+                                    |
+                                    Score:
+                                    ${escapeHtml(item.score)}
+                                </p>
+
+                            </div>
+
+
+                            <span class="
+                                bg-indigo-900
+                                text-indigo-200
+                                text-xs
+                                font-semibold
+                                px-2.5
+                                py-1
+                                rounded
+                                whitespace-nowrap
+                            ">
+                                ${escapeHtml(item.house)}
+                            </span>
+
+                        </div>
+                    `;
+
+                }).join('')
+
+                ||
+
+                `
+                    <p class="
+                        text-slate-400
+                        text-center
+                        py-4
+                    ">
+                        No matching accepted students found.
+                    </p>
+                `;
+        }
+
+
+        /*
+         * REJECTED LIST
+         */
+        function renderRejected(rejected) {
+
+            const container =
+                document.getElementById(
+                    'rejected-list'
+                );
+
+
+            container.innerHTML =
+                rejected.map(item => {
+
+                    const app =
+                        item.application;
+
+
+                    let reasonText =
+                        item.rejectionReason;
+
+
+                    if (
+                        reasonText !== null &&
+                        reasonText !== undefined &&
+                        reasonText !== '' &&
+                        !Number.isNaN(Number(reasonText))
+                    ) {
+
+                        reasonText =
+                            `Rank #${reasonText} (No places left)`;
+                    }
+
+
+                    const ranking =
+                        item.rank > 0
+                            ? `Rank #${item.rank}`
+                            : 'Vetoed before ranking';
+
+
+                    return `
+                        <div class="
+                            bg-slate-700/50
+                            p-3
+                            rounded-lg
+                            border border-slate-600
+                            flex justify-between items-center
+                            gap-4
+                        ">
+
+                            <div>
+
+                                <span class="
+                                    font-bold
+                                    text-slate-200
+                                ">
+                                    ${escapeHtml(app.firstName)}
+                                    ${escapeHtml(app.familyName)}
+                                </span>
+
+
+                                <p class="
+                                    text-xs
+                                    text-rose-300
+                                    mt-1
+                                ">
+                                    Reason:
+                                    ${escapeHtml(reasonText)}
+                                </p>
+
+
+                                <p class="
+                                    text-xs
+                                    text-slate-500
+                                    mt-1
+                                ">
+                                    ${escapeHtml(ranking)}
+                                </p>
+
+                            </div>
+
+
+                            <span class="
+                                text-xs
+                                text-slate-400
+                                whitespace-nowrap
+                            ">
+                                Age:
+                                ${escapeHtml(app.age)}
+                            </span>
+
+                        </div>
+                    `;
+
+                }).join('')
+
+                ||
+
+                `
+                    <p class="
+                        text-slate-400
+                        text-center
+                        py-4
+                    ">
+                        No matching rejected applications found.
+                    </p>
+                `;
+        }
+
     </script>
+
 </body>
-</html> 
+
+</html>
