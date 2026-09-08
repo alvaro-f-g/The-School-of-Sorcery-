@@ -219,6 +219,5 @@ AI was used during development for code review, debugging, test design and docum
 
 More details are available in:
 
-```text
 [AI-NOTES.md](AI-NOTES.md)
-```
+
