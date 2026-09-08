@@ -1,58 +1,224 @@
-# School of Sorcery - Council Admission & House Assignment Engine
+# School of Sorcery
 
-A robust, deterministic backend system built in **Java 21** to process student applications for the School of Sorcery, paired with a modern web dashboard built with **Tailwind CSS**.
+Java application for processing student applications to the School of Sorcery.
 
-## Features
+The program reads:
 
-- **JSON Data Processing**: Reads applications and council rules using `GSON`.
-- **Business Rule Enforcement**: Handles direct vetoes (banned families, age ranges, unacceptable weaknesses, deadlines) and invitation lists.
-- **Deterministic Scoring & Ranking**: Calculates student scores and applies strict tie-breaking criteria (score descending, age ascending, family name, first name, and ID ascending) to guarantee identical outputs regardless of input line order.
-- **House Assignment**: Dynamically assigns students to houses (*Lion*, *Serpent*, *Raven*, *Badger*) based on their virtues.
-- **Interactive Web Dashboard**: Built with Tailwind CSS featuring real-time name searching and house filtering tabs for accepted students.
+- `data/applications.json`
+- `data/council-rules.json`
+
+It applies the council rules, calculates admission scores, ranks eligible applicants, handles invitations and vetoes, assigns houses, and produces the final admission results.
+
+The application also includes a simple web interface where the council can upload a different applications JSON file and view the processed results.
+
+## Main Features
+
+- Reads all yearly rules from `council-rules.json`
+- Processes student applications from JSON
+- Applies vetoes in the required order
+- Invitations override vetoes and guarantee admission
+- Calculates admission score based on:
+  - virtue
+  - family
+  - weakness
+  - age
+- Ranks applicants deterministically
+- Accepts exactly the number of places defined in the rules
+- Reports rejection reasons
+- Assigns accepted students to:
+  - Lion
+  - Serpent
+  - Raven
+  - Badger
+- Supports house tie-breaking based on the order in the rules file
+- Web dashboard with:
+  - application file upload
+  - accepted / rejected results
+  - ranking positions
+  - house assignment
+  - name search
+  - house filtering
+
+## Technologies
+
+- Java 21
+- Gson
+- Java built-in `HttpServer`
+- HTML
+- JavaScript
+- Tailwind CSS
+- Maven
+- JUnit 5
 
 ## Project Structure
 
 ```text
-├── data/
-│   ├── applications.json
-│   └── council-rules.json
-├── public/
-│   └── index.html
-├── src/
-│   └── main/java/com/sorcery/
-│       ├── Main.java
-│       ├── Model.java
-│       └── SorceryEngine.java
-├── pom.xml
-├── README.md
-└── AI-NOTES.md
+data/
+├── applications.json
+└── council-rules.json
+
+public/
+├── index.html
+└── results.json
+
+src/
+├── main/java/com/sorcery/
+│   ├── Main.java
+│   ├── Model.java
+│   └── SorceryEngine.java
+│
+└── test/java/com/sorcery/
+    └── SorceryEngineTest.java
+
+pom.xml
+README.md
+AI-NOTES.md
 ```
 
-## How to Get and Run the Project
+## Requirements
 
-### 1. Clone the Repository
+Before running the project, make sure you have:
 
-Open your terminal and run the following commands to clone the project and enter the directory:
+- Java JDK 21
+- Maven
 
-**Bash**
+You can verify them with:
 
 ```bash
-git clone https://github.com/alvaro-f-g/The-School-of-Sorcery-.git
-cd The-School-of-Sorcery-
+java -version
+javac -version
+mvn -version
 ```
 
-### 2. Open in Visual Studio Code
+## How to Run
 
-1. Open **VS Code** and select **File > Open Folder...**, then choose the cloned project folder.
-2. Ensure you have the **Extension Pack for Java** installed in VS Code.
+### Option 1: Run from Visual Studio Code
 
-### 3. Run the Backend Engine
+Open the project in Visual Studio Code.
 
-1. Navigate to `src/main/java/com/sorcery/Main.java`.
-2. Click the **"Run"** button or play icon located above the `main` method in the editor.
-3. The Java 21 runtime will compile and process the files inside `data/`, automatically generating the processed results file at `public/results.json`.
+Open:
 
-### 4. Launch the Web Dashboard
+```text
+src/main/java/com/sorcery/Main.java
+```
 
-1. Open the `public/index.html` file in your browser (or use the *Live Server* extension in VS Code).
-2. Explore the council results dashboard, view accepted students grouped by house, filter by specific houses (*Lion*, *Serpent*, *Raven*, *Badger*), or use the real-time search bar to look up applicants instantly.
+Run the `main` method using the **Run** button.
+
+The application will:
+
+1. Read `data/applications.json`
+2. Read `data/council-rules.json`
+3. Process all applications
+4. Generate `public/results.json`
+5. Start the web server
+
+You should see something similar to:
+
+```text
+=== RESULTADOS SCHOOL OF SORCERY ===
+Total procesados: 200
+Admitidos: 50
+Rechazados: 150
+
+Web disponible en: http://localhost:8080
+```
+
+Then open:
+
+```text
+http://localhost:8080
+```
+
+in your browser.
+
+### Option 2: Run Tests with Maven
+
+Run:
+
+```bash
+mvn test
+```
+
+A successful execution should finish with:
+
+```text
+Tests run: 8, Failures: 0, Errors: 0
+BUILD SUCCESS
+```
+
+## Using the Web Interface
+
+When the application starts, the dashboard displays the results generated from the default:
+
+```text
+data/applications.json
+```
+
+To process another applications file:
+
+1. Open `http://localhost:8080`
+2. Select a JSON file
+3. Click **Process Applications**
+
+The uploaded file is processed by the Java backend using the current:
+
+```text
+data/council-rules.json
+```
+
+The dashboard updates automatically with the new ranking, admission status and house assignments.
+
+The latest results are also saved to:
+
+```text
+public/results.json
+```
+
+## Applications JSON Format
+
+The applications file must contain an `applications` array:
+
+```json
+{
+  "applications": [
+    {
+      "id": "A001",
+      "firstName": "Lira",
+      "familyName": "Marlowe",
+      "age": 13,
+      "virtue": "cunning",
+      "weakness": "shyness",
+      "applicationDate": "2026-03-10"
+    }
+  ]
+}
+```
+
+## Tests
+
+The project includes automated tests for the main business rules, including:
+
+- number of accepted and rejected applicants
+- invitations
+- veto handling
+- ranking positions
+- house assignment
+- deterministic output
+- veto priority
+- ranking tie-breakers
+
+Run them with:
+
+```bash
+mvn test
+```
+
+## AI Usage
+
+AI was used during development for code review, debugging, test design and documentation.
+
+More details are available in:
+
+```text
+AI-NOTES.md
+```
