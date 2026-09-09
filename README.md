@@ -127,11 +127,7 @@ Rechazados: 150
 Web disponible en: http://localhost:8080
 ```
 
-Then open:
-
-```text
-http://localhost:8080
-```
+Then open [http://localhost:8080](http://localhost:8080) in your browser.
 
 in your browser.
 
@@ -162,13 +158,12 @@ Rechazados: 150
 Web disponible en: http://localhost:8080
 ```
 
-Then open:
-
-```text
-http://localhost:8080
-```
+Then open [http://localhost:8080](http://localhost:8080) in your browser.
 
 in your browser.
+
+**Important:** Run the application using one of the methods above before opening the dashboard.  
+The web interface must be accessed through `http://localhost:8080`. Opening `index.html` directly or using another local server may cause the `/api/process` request to fail.
 
 ### Option 3: Run Tests with Maven
 
