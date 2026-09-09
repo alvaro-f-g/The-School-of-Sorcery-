@@ -96,6 +96,8 @@ mvn -version
 
 ## How to Run
 
+**Important:** Open the project folder that directly contains `pom.xml`, `data/`, `public/` and `src/` before running the application.
+
 ### Option 1: Run from Visual Studio Code
 
 Open the project in Visual Studio Code.
