@@ -371,6 +371,97 @@ class SorceryEngineTest {
         assertEquals(3, results.get(2).getRank());
         assertEquals(4, results.get(3).getRank());
         }
+
+@Test
+        void houseTieShouldUseFirstHouseInRulesFile() throws Exception {
+
+        Gson gson = new Gson();
+
+        String applicationsJson = """
+                {
+                "applications": [
+                {
+                "id": "HOUSE-TIE",
+                "firstName": "Tie",
+                "familyName": "Nobody",
+                "age": 12,
+                "virtue": "unknown",
+                "weakness": "unknown",
+                "applicationDate": "2026-03-10"
+                }
+                ]
+                }
+                """;
+
+        Model.ApplicationsContainer container =
+                gson.fromJson(
+                        applicationsJson,
+                        Model.ApplicationsContainer.class
+                );
+
+        SorceryEngine engine = new SorceryEngine();
+
+        engine.loadRules(Paths.get("data"));
+        engine.setApplications(container.getApplications());
+
+        List<Model.StudentResult> results =
+                engine.process();
+
+        Model.StudentResult result = results.get(0);
+
+        assertTrue(result.isAccepted());
+
+        assertEquals(
+                "Lion",
+                result.getHouse(),
+                "A house tie must be won by the first house in the rules file"
+        );
+        }
+
+
+        @Test
+        void unknownValuesShouldAddZeroAdmissionPoints() throws Exception {
+
+        Gson gson = new Gson();
+
+        String applicationsJson = """
+                {
+                "applications": [
+                {
+                "id": "ZERO-POINTS",
+                "firstName": "Zero",
+                "familyName": "UnknownFamily",
+                "age": 12,
+                "virtue": "unknownVirtue",
+                "weakness": "unknownWeakness",
+                "applicationDate": "2026-03-10"
+                }
+                ]
+                }
+                """;
+
+        Model.ApplicationsContainer container =
+                gson.fromJson(
+                        applicationsJson,
+                        Model.ApplicationsContainer.class
+                );
+
+        SorceryEngine engine = new SorceryEngine();
+
+        engine.loadRules(Paths.get("data"));
+        engine.setApplications(container.getApplications());
+
+        List<Model.StudentResult> results =
+                engine.process();
+
+        Model.StudentResult result = results.get(0);
+
+        assertEquals(
+                5,
+                result.getScore(),
+                "Unknown values must contribute zero points"
+        );
+        }   
     private List<String> normalizeResults(
             List<Model.StudentResult> results) {
 

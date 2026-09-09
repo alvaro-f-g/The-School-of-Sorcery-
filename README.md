@@ -131,7 +131,43 @@ http://localhost:8080
 
 in your browser.
 
-### Option 2: Run Tests with Maven
+### Option 2: Run with Maven
+
+From the project root, run:
+
+```bash
+mvn exec:java
+```
+
+The application will:
+
+1. Read `data/applications.json`
+2. Read `data/council-rules.json`
+3. Process all applications
+4. Generate `public/results.json`
+5. Start the web server
+
+You should see something similar to:
+
+```text
+=== RESULTADOS SCHOOL OF SORCERY ===
+Total procesados: 200
+Admitidos: 50
+Rechazados: 150
+
+Web disponible en: http://localhost:8080
+```
+
+Then open:
+
+```text
+http://localhost:8080
+```
+
+in your browser.
+
+### Option 3: Run Tests with Maven
+
 
 Run:
 
