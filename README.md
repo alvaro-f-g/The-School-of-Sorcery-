@@ -237,6 +237,8 @@ The project includes automated tests for the main business rules, including:
 - deterministic output
 - veto priority
 - ranking tie-breakers
+- house tie-breaking based on council rules order
+- unknown values contributing zero admission points
 
 Run them with:
 
