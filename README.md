@@ -11,6 +11,10 @@ It applies the council rules, calculates admission scores, ranks eligible applic
 
 The application also includes a simple web interface where the council can upload a different applications JSON file and view the processed results.
 
+## Dashboard
+
+![School of Sorcery dashboard](docs/dashboard.png)
+
 ## Main Features
 
 - Reads all yearly rules from `council-rules.json`
@@ -178,7 +182,7 @@ mvn test
 A successful execution should finish with:
 
 ```text
-Tests run: 8, Failures: 0, Errors: 0
+Tests run: 10, Failures: 0, Errors: 0
 BUILD SUCCESS
 ```
 

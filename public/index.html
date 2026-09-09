@@ -48,6 +48,9 @@
                                hover:file:bg-slate-600
                                cursor-pointer"
                     >
+                    <p id="loaded-file-name" class="text-xs text-slate-500 mt-1">
+                        Loaded file: data/applications.json
+                    </p>
                 </div>
 
                 <button
@@ -346,10 +349,46 @@
                     !parsed ||
                     !Array.isArray(parsed.applications)
                 ) {
-
                     throw new Error(
                         'Invalid applications file. Expected an "applications" array.'
                     );
+                }
+
+                const requiredFields = [
+                    'id',
+                    'firstName',
+                    'familyName',
+                    'age',
+                    'virtue',
+                    'weakness',
+                    'applicationDate'
+                ];
+
+                for (let i = 0; i < parsed.applications.length; i++) {
+
+                    const application = parsed.applications[i];
+
+                    for (const field of requiredFields) {
+
+                        if (
+                            application[field] === undefined ||
+                            application[field] === null ||
+                            application[field] === ''
+                        ) {
+                            throw new Error(
+                                `Invalid application at position ${i + 1}: missing field "${field}".`
+                            );
+                        }
+                    }
+
+                    if (
+                        typeof application.age !== 'number' ||
+                        !Number.isInteger(application.age)
+                    ) {
+                        throw new Error(
+                            `Invalid application at position ${i + 1}: "age" must be an integer.`
+                        );
+                    }
                 }
 
 
@@ -391,6 +430,10 @@
 
 
                 allData = responseData;
+
+                document.getElementById(
+                    'loaded-file-name'
+                ).innerText = `Loaded file: ${file.name}`;
 
                 currentQuery = '';
                 selectedHouse = 'ALL';
