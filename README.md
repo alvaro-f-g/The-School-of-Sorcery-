@@ -96,7 +96,7 @@ mvn -version
 
 ## How to Run
 
-**Important:** Open the project folder that directly contains `pom.xml`, `data/`, `public/` and `src/` before running the application.
+**Important:** If you choose to download the zip instead of cloning the repository, is important to open VsCode or your IDE in the second folder, open the project folder that directly contains `pom.xml`, `data/`, `public/` and `src/` before running the application.
 
 ### Option 1: Run from Visual Studio Code
 
